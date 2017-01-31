@@ -19,13 +19,38 @@ public:
 
     //-----------------------------PUBLIC FUNCTIONS-----------------------------
 
-    void naive_find(
+    uint32_t naive_find(
         const char* s,
         uint32_t s_length,
         const char* primary_token,
         uint32_t primary_length,
-        uint32_t* pos)
+        uint32_t pos = 0)
     {
+        // if the null position has been supplied for lengths, evaluate the actual
+        // lengths
+        if(s_length == kFFFNpos)
+        {
+            s_length = strlen(s);
+        }
+        if(primary_length == kFFFNpos)
+        {
+            primary_length = strlen(primary_token);
+        }
+
+        // if either string has a length of 0 or the search position is beyond the
+        // length of the string
+        if(s_length == 0 || pos >= s_length)
+        {
+            return kFFFNpos;
+        }
+        if(primary_length == 0)
+        {
+            return 0;
+        }
+
+        s += pos;
+        s_length -= pos;
+
         for(uint32_t i = 0; i < (s_length - (primary_length - 1)); ++i)
         {
             uint32_t found = 1;
@@ -39,13 +64,11 @@ public:
             }
             if(found != 0)
             {
-                *pos = i;
-                return;
+                return i;
             }
         }
 
-        *pos = kFFFNpos;
-        return;
+        return kFFFNpos;
     }
 };
 
@@ -53,36 +76,36 @@ public:
 //                                  PROTOTYPING
 //------------------------------------------------------------------------------
 
-ARC_TEST_UNIT_FIXTURE(proto, FFF_Fixture)
-{
-    std::string s("this is a eclectic sentence with some content");
-    std::string primary("ent");
+// ARC_TEST_UNIT_FIXTURE(proto, FFF_Fixture)
+// {
+//     std::string s("this is a eclectic sentence with some content");
+//     std::string primary("ent");
 
-    const char* fff_s = s.c_str();
-    uint32_t fff_s_length = s.length();
-    const char* fff_primary_token = primary.c_str();
-    uint32_t fff_primary_length = primary.length();
+//     const char* fff_s = s.c_str();
+//     uint32_t fff_s_length = s.length();
+//     const char* fff_primary_token = primary.c_str();
+//     uint32_t fff_primary_length = primary.length();
 
-    uint32_t primary_pos = kFFFNpos;
-    uint32_t secondary_pos = kFFFNpos;
+//     uint32_t primary_pos = kFFFNpos;
+//     uint32_t secondary_pos = kFFFNpos;
 
-    FFFError error_code = fff(
-        fff_s,
-        fff_s_length,
-        fff_primary_token,
-        fff_primary_length,
-        0x0,
-        0,
-        kFFFEncodingASCII,
-        kFFFFlagNone,
-        &primary_pos,
-        &secondary_pos
-    );
+//     FFFError error_code = fff(
+//         fff_s,
+//         fff_s_length,
+//         fff_primary_token,
+//         fff_primary_length,
+//         0x0,
+//         0,
+//         kFFFEncodingASCII,
+//         kFFFFlagNone,
+//         &primary_pos,
+//         &secondary_pos
+//     );
 
-    std::cout << "error: " << error_code << std::endl;
+//     std::cout << "error: " << error_code << std::endl;
 
-    ARC_CHECK_EQUAL(error_code, kFFFErrorNone);
-}
+//     ARC_CHECK_EQUAL(error_code, kFFFErrorNone);
+// }
 
 // TODO: test decection in remainder
 // TODO: test long search string in almost repeating string
@@ -99,29 +122,26 @@ ARC_TEST_UNIT_FIXTURE(ascii_performance, FFF_Fixture)
     // std::string s("this is an eclectic sent this is an eclectic sentence");
     // std::string primary("this is an eclectic sentence");
 
-
     const char* fff_s = s.c_str();
     uint32_t fff_s_length = s.length();
     const char* fff_primary_token = primary.c_str();
     uint32_t fff_primary_length = primary.length();
 
-    uint32_t secondary_pos = kFFFNpos;
-
     //--------------------------------------------------------------------------
     // test dummy - since first run is normally slower
     //--------------------------------------------------------------------------
-    ARC_TEST_MESSAGE("Running dummy find");
-    uint32_t dummy_result = kFFFNpos;
-    for(std::size_t i = 0; i < 10; ++i)
-    {
-        fixture->naive_find(
-            fff_s,
-            fff_s_length,
-            fff_primary_token,
-            fff_primary_length,
-            &dummy_result
-        );
-    }
+    // ARC_TEST_MESSAGE("Running dummy find");
+    // uint32_t dummy_result = kFFFNpos;
+    // for(std::size_t i = 0; i < 10; ++i)
+    // {
+    //     fixture->naive_find(
+    //         fff_s,
+    //         fff_s_length,
+    //         fff_primary_token,
+    //         fff_primary_length,
+    //         &dummy_result
+    //     );
+    // }
     //--------------------------------------------------------------------------
 
     //--------------------------------------------------------------------------
@@ -131,27 +151,26 @@ ARC_TEST_UNIT_FIXTURE(ascii_performance, FFF_Fixture)
     uint32_t naive_result = kFFFNpos;
     arc::uint64 naive_start =
         arc::clock::get_current_time(arc::clock::METRIC_NANOSECONDS);
-    for(std::size_t i = 0; i < 10; ++i)
+    for(std::size_t i = 0; i < 1; ++i)
     {
-        // fixture->naive_find(
+        naive_result = fixture->naive_find(
+            fff_s,
+            fff_s_length,
+            fff_primary_token,
+            fff_primary_length
+        );
+        // naive_result = fff_find(
         //     fff_s,
         //     fff_s_length,
         //     fff_primary_token,
         //     fff_primary_length,
-        //     &naive_result
+        //     0x0,
+        //     0,
+        //     kFFFEncodingUTF8,
+        //     kFFFFlagNone,
+        //     &naive_result,
+        //     &secondary_pos
         // );
-        fff(
-            fff_s,
-            fff_s_length,
-            fff_primary_token,
-            fff_primary_length,
-            0x0,
-            0,
-            kFFFEncodingUTF8,
-            kFFFFlagNone,
-            &naive_result,
-            &secondary_pos
-        );
     }
     arc::uint64 naive_end =
         arc::clock::get_current_time(arc::clock::METRIC_NANOSECONDS);
@@ -166,7 +185,7 @@ ARC_TEST_UNIT_FIXTURE(ascii_performance, FFF_Fixture)
     std::string::size_type std_result = std::string::npos;
     arc::uint64 std_start =
         arc::clock::get_current_time(arc::clock::METRIC_NANOSECONDS);
-    for(std::size_t i = 0; i < 10; ++i)
+    for(std::size_t i = 0; i < 1; ++i)
     {
         std_result = s.find(primary);
     }
@@ -181,23 +200,16 @@ ARC_TEST_UNIT_FIXTURE(ascii_performance, FFF_Fixture)
     //--------------------------------------------------------------------------
     ARC_TEST_MESSAGE("Running FFF");
     uint32_t fff_result = kFFFNpos;
-    FFFError error_code = kFFFErrorNone;
     arc::uint64 fff_start =
         arc::clock::get_current_time(arc::clock::METRIC_NANOSECONDS);
     // TODO:
-    for(std::size_t i = 0; i < 10; ++i)
+    for(std::size_t i = 0; i < 1; ++i)
     {
-        error_code = fff(
+        fff_result = fff_find(
             fff_s,
             fff_s_length,
             fff_primary_token,
-            fff_primary_length,
-            0x0,
-            0,
-            kFFFEncodingASCII,
-            kFFFFlagNone,
-            &fff_result,
-            &secondary_pos
+            fff_primary_length
         );
     }
     arc::uint64 fff_end =
@@ -205,8 +217,6 @@ ARC_TEST_UNIT_FIXTURE(ascii_performance, FFF_Fixture)
     arc::uint64 fff_time = fff_end - fff_start;
     std::cout << "fff time: " << fff_time << std::endl;
     //--------------------------------------------------------------------------
-
-    ARC_CHECK_EQUAL(error_code, kFFFErrorNone);
 
     ARC_CHECK_EQUAL(fff_result, naive_result);
     ARC_CHECK_TRUE(fff_time < naive_time);
